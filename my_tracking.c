@@ -3,11 +3,6 @@
 
 #include "alcon2010.h"
 
-// 97.4
-// 97.2
-// 96.1
-// 91.6
-// 94.2
 
 #define SEARCH_RANGE 50			/* 移動物体の探索範囲 */
 
@@ -48,7 +43,6 @@ void getImage(const unsigned char *srcImg, const bounding_box box, int width, in
 
 void setXY(const unsigned char *image, bounding_box *obox, int width, int height)
 {
-	int e, err, merr;
 	int minX, minY;
 	int serachWidth, serachHeight;
 	int i0, j0;
@@ -60,7 +54,6 @@ void setXY(const unsigned char *image, bounding_box *obox, int width, int height
 
 	i0 = box.x;
 	j0 = box.y;
-	merr = 1000;
 
 	minX = box.x - SEARCH_RANGE;
 	minY = box.y - SEARCH_RANGE;
@@ -78,12 +71,10 @@ void setXY(const unsigned char *image, bounding_box *obox, int width, int height
 
 		for ( m = 0; m < serachWidth; m++ ) {
 			if ( m + minX >= width || m + minX < 0 ) continue;
-			err = 0;
 
-			e = PIX(preImg, m, n, serachWidth, 0) - PIX(image, m + minX, n + minY, width, 0); err += e * e;
-			e = PIX(preImg, m, n, serachWidth, 1) - PIX(image, m + minX, n + minY, width, 1); err += e * e;
-			e = PIX(preImg, m, n, serachWidth, 2) - PIX(image, m + minX, n + minY, width, 2); err += e * e;
-			if ( err > merr ) {
+			if ( 	PIX(preImg, m, n, serachWidth, 0) != PIX(image, m + minX, n + minY, width, 0) ||
+			 	PIX(preImg, m, n, serachWidth, 1) != PIX(image, m + minX, n + minY, width, 1) ||
+			 	PIX(preImg, m, n, serachWidth, 2) != PIX(image, m + minX, n + minY, width, 2)) {
 				if ( x1 > m ) {
 					x1 = m;
 				} else if ( x2 < m ) {
@@ -118,7 +109,6 @@ void setXY(const unsigned char *image, bounding_box *obox, int width, int height
 
 	obox->x = i0;
 	obox->y = j0;
-	// printf("y1:%d y2:%d\n", y1, y2);
 }
 
 
