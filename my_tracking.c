@@ -51,6 +51,7 @@ void setXY(const unsigned char *image, bounding_box *obox, int width, int height
 	int m, n;
 	bounding_box box;
 	box = *obox;
+	int isBreak;
 
 	i0 = box.x;
 	j0 = box.y;
@@ -66,6 +67,7 @@ void setXY(const unsigned char *image, bounding_box *obox, int width, int height
 	y2 = preY2 = preY1 + box.h;
 
 	/* 前フレームと現フレームの探索範囲での変化を調べ、移動物体位置を探索 */
+	isBreak = 0;
 	for ( n = 0; n < serachHeight; n++ ) {
 		if ( n + minY >= height || n + minY < 0 ) continue;
 
@@ -75,19 +77,74 @@ void setXY(const unsigned char *image, bounding_box *obox, int width, int height
 			if ( 	PIX(preImg, m, n, serachWidth, 0) != PIX(image, m + minX, n + minY, width, 0) ||
 			 	PIX(preImg, m, n, serachWidth, 1) != PIX(image, m + minX, n + minY, width, 1) ||
 			 	PIX(preImg, m, n, serachWidth, 2) != PIX(image, m + minX, n + minY, width, 2)) {
-				if ( x1 > m ) {
-					x1 = m;
-				} else if ( x2 < m ) {
-					x2 = m;
-				}
-
 				if ( y1 > n ) {
 					y1 = n;
-				} else if ( y2 < n ) {
-					y2 = n;
 				}
+				isBreak = 1;
+				break;
 			}
 		}
+		if ( isBreak ) break;
+	}
+
+	isBreak = 0;
+	for ( n = serachHeight - 1; n >= 0; n-- ) {
+		if ( n + minY >= height || n + minY < 0 ) continue;
+
+		for ( m = 0; m < serachWidth; m++ ) {
+			if ( m + minX >= width || m + minX < 0 ) continue;
+
+			if ( 	PIX(preImg, m, n, serachWidth, 0) != PIX(image, m + minX, n + minY, width, 0) ||
+			 	PIX(preImg, m, n, serachWidth, 1) != PIX(image, m + minX, n + minY, width, 1) ||
+			 	PIX(preImg, m, n, serachWidth, 2) != PIX(image, m + minX, n + minY, width, 2)) {
+				if ( y2 < n ) {
+					y2 = n;
+				}
+				isBreak = 1;
+				break;
+			}
+		}
+		if ( isBreak ) break;
+	}
+
+	isBreak = 0;
+	for ( m = 0; m < serachWidth; m++ ) {
+		if ( m + minX >= width || m + minX < 0 ) continue;
+
+		for ( n = y1; n <= y2; n++ ) {
+			if ( n + minY >= height || n + minY < 0 ) continue;
+
+			if ( 	PIX(preImg, m, n, serachWidth, 0) != PIX(image, m + minX, n + minY, width, 0) ||
+			 	PIX(preImg, m, n, serachWidth, 1) != PIX(image, m + minX, n + minY, width, 1) ||
+			 	PIX(preImg, m, n, serachWidth, 2) != PIX(image, m + minX, n + minY, width, 2)) {
+				if ( x1 > m ) {
+					x1 = m;
+				}
+				isBreak = 1;
+				break;
+			}
+		}
+		if ( isBreak ) break;
+	}
+
+	isBreak = 0;
+	for ( m = serachWidth - 1; m >= 0; m-- ) {
+		if ( m + minX >= width || m + minX < 0 ) continue;
+
+		for ( n = y1; n <= y2; n++ ) {
+			if ( n + minY >= height || n + minY < 0 ) continue;
+
+			if ( 	PIX(preImg, m, n, serachWidth, 0) != PIX(image, m + minX, n + minY, width, 0) ||
+			 	PIX(preImg, m, n, serachWidth, 1) != PIX(image, m + minX, n + minY, width, 1) ||
+			 	PIX(preImg, m, n, serachWidth, 2) != PIX(image, m + minX, n + minY, width, 2)) {
+				if ( x2 < m ) {
+					x2 = m;
+				}
+				isBreak = 1;
+				break;
+			}
+		}
+		if ( isBreak ) break;
 	}
 
 	preX1 -= x1;
