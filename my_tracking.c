@@ -49,7 +49,7 @@ void getImage(const unsigned char *srcImg, const bounding_box box, int width, in
 
 void setXY(const unsigned char *image, bounding_box *obox, int width, int height)
 {
-	int e, err, merr;
+	double e, err, merr;
 	int minX, minY;
 	int serachWidth, serachHeight;
 	int i0, j0;
@@ -166,13 +166,13 @@ void setXY(const unsigned char *image, bounding_box *obox, int width, int height
 	if ( preX1 > preX2 ) {
 		i0 = x1 + minX;
 	} else if ( preX1 < preX2 ){
-		i0 = x2 + minX - box.w;
+		i0 = x2 + minX - (box.w - 1);
 	}
 
 	if (  preY1 > preY2) {
 		j0 = y1 + minY;
 	} else if ( preY1 < preY2 ) {
-		j0 = y2 + minY - box.h;
+		j0 = y2 + minY - (box.h - 1);
 	}
 
 	obox->x = i0;
