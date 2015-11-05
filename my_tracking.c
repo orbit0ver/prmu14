@@ -49,7 +49,7 @@ void getImage(const unsigned char *srcImg, const bounding_box box, int width, in
 
 void setXY(const unsigned char *image, bounding_box *obox, int width, int height)
 {
-	double e, err, merr;
+	int e, err, merr;
 	int minX, minY;
 	int serachWidth, serachHeight;
 	int i0, j0;
@@ -166,13 +166,13 @@ void setXY(const unsigned char *image, bounding_box *obox, int width, int height
 	if ( preX1 > preX2 ) {
 		i0 = x1 + minX;
 	} else if ( preX1 < preX2 ){
-		i0 = x2 + minX - (box.w - 1);
+		i0 = x2 + minX - box.w;
 	}
 
 	if (  preY1 > preY2) {
 		j0 = y1 + minY;
 	} else if ( preY1 < preY2 ) {
-		j0 = y2 + minY - (box.h - 1);
+		j0 = y2 + minY - box.h;
 	}
 
 	obox->x = i0;
@@ -218,7 +218,36 @@ void my_tracking_level1( int frameID, unsigned char *image, int width, int heigh
 /* レベル2用 */
 void my_tracking_level2( int frameID, unsigned char *image, int width, int height )
 {
+	if( frameID == 0 )
+	{
+		/* 最初のフレームは追跡開始位置を記憶 */
+		// 001,540,132,86,80
+		// 002,5,230,202,121
+		// 003,415,213,215,121
+		// 004,505,230,26,56
+		// 005,157,256,53,48
+		obox.x = 540;
+		obox.y = 132;
+		obox.w = 86;
+		obox.h = 80;
 
+		/* 移動物体を囲む矩形を設定 */
+		set_result( frameID, obox );
+
+		getImage(image, obox, width, height);
+	}
+	else
+	{
+		/* 前回の物体位置を基準にして現在の物体位置を探索 */
+		setXY(image, &obox, width, height);
+		// printf("%d %d\n",obox.x, obox.y );
+
+		/* 移動物体を囲む矩形を保存 */
+		set_result( frameID, obox );
+
+		/* 現在フレームの探索範囲を確保 */
+		getImage(image, obox, width, height);
+	}
 }
 
 /* レベル3用 */
