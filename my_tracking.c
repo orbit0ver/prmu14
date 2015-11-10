@@ -251,7 +251,7 @@ void getImage2(const unsigned char *srcImg, const bounding_box box, int width, i
 
 double sobelFilter(const unsigned char *image, int x, int y, int width);
 
-void setXY2(const unsigned char *image, bounding_box *obox, int width, int height)
+void setXY2(const unsigned char *image, bounding_box *obox, int width, int height, int id)
 {
 	int e, err, merr;
 	int minX, minY;
@@ -369,6 +369,91 @@ void setXY2(const unsigned char *image, bounding_box *obox, int width, int heigh
 		if ( missCount >= MISSRANGE ) break;
 	}
 
+
+
+	// 下方向
+	missCount = 0;
+	for ( n = y1; n < serachHeight; n++ ) {
+		if ( n + minY >= height || n + minY < 0 ) continue;
+
+		for ( m = x1; m <= x2; m++ ) {
+			if ( m + minX >= width || m + minX < 0 ) continue;
+			err = 0;
+
+			e = PIX(preImg, m, n, serachWidth, 0) - PIX(image, m + minX, n + minY, width, 0); err += e * e;
+			e = PIX(preImg, m, n, serachWidth, 1) - PIX(image, m + minX, n + minY, width, 1); err += e * e;
+			e = PIX(preImg, m, n, serachWidth, 2) - PIX(image, m + minX, n + minY, width, 2); err += e * e;
+			if ( err > merr ) {
+				y1 = n;
+				missCount = -1;
+				break;
+			}
+		}
+		if ( missCount < 0 ) break;
+	}
+
+	missCount = 0;
+	for ( n = y2; n >= 0; n-- ) {
+		if ( n + minY >= height || n + minY < 0 ) continue;
+
+		for ( m = x1; m <= x2; m++ ) {
+			if ( m + minX >= width || m + minX < 0 ) continue;
+			err = 0;
+
+			e = PIX(preImg, m, n, serachWidth, 0) - PIX(image, m + minX, n + minY, width, 0); err += e * e;
+			e = PIX(preImg, m, n, serachWidth, 1) - PIX(image, m + minX, n + minY, width, 1); err += e * e;
+			e = PIX(preImg, m, n, serachWidth, 2) - PIX(image, m + minX, n + minY, width, 2); err += e * e;
+			if ( err > merr ) {
+				y2 = n;
+				missCount = -1;
+				break;
+			}
+		}
+		if ( missCount < 0) break;
+	}
+
+	// 右方向
+	missCount = 0;
+	for ( m = x1; m < x2; m++ ) {
+		if ( m + minX >= width || m + minX < 0 ) continue;
+
+		for ( n = y1; n <= y2; n++ ) {
+			if ( n + minY >= height || n + minY < 0 ) continue;
+			err = 0;
+
+			e = PIX(preImg, m, n, serachWidth, 0) - PIX(image, m + minX, n + minY, width, 0); err += e * e;
+			e = PIX(preImg, m, n, serachWidth, 1) - PIX(image, m + minX, n + minY, width, 1); err += e * e;
+			e = PIX(preImg, m, n, serachWidth, 2) - PIX(image, m + minX, n + minY, width, 2); err += e * e;
+			if ( err > merr ) {
+				x1 = m;
+				missCount = -1;
+				break;
+			}
+		}
+		if ( missCount < 0 ) break;
+	}
+
+	// 左方向
+	missCount = 0;
+	for ( m = x2; m >= 0; m-- ) {
+		if ( m + minX >= width || m + minX < 0 ) continue;
+
+		for ( n = y1; n <= y2; n++ ) {
+			if ( n + minY >= height || n + minY < 0 ) continue;
+			err = 0;
+
+			e = PIX(preImg, m, n, serachWidth, 0) - PIX(image, m + minX, n + minY, width, 0); err += e * e;
+			e = PIX(preImg, m, n, serachWidth, 1) - PIX(image, m + minX, n + minY, width, 1); err += e * e;
+			e = PIX(preImg, m, n, serachWidth, 2) - PIX(image, m + minX, n + minY, width, 2); err += e * e;
+			if ( err > merr ) {
+				x2 = m;
+				missCount = -1;
+				break;
+			}
+		}
+		if ( missCount < 0 ) break;
+	}
+
 	// 移動物体の幅や高さと変化したそれぞれの位置をもとに移動物体の位置を特定
 	// x方向とy方向それぞれ変化の大きい方の計算を行う
 	double testVal;
@@ -447,6 +532,7 @@ void setXY2(const unsigned char *image, bounding_box *obox, int width, int heigh
 	}
 
 	i0 = x1 + minX;
+
 	j0 = y1 + minY;
 	obox->x = i0;
 	obox->y = j0;
@@ -511,7 +597,7 @@ void my_tracking_level2( int frameID, unsigned char *image, int width, int heigh
 	else
 	{
 		/* 前回の物体位置を基準にして現在の物体位置を探索 */
-		setXY2(image, &obox, width, height);
+		setXY2(image, &obox, width, height, frameID);
 		// printf("%d %d\n",obox.x, obox.y );
 
 		/* 移動物体を囲む矩形を保存 */
