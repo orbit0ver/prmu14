@@ -27,7 +27,7 @@ bounding_box _searchBox;
 double calcSSD(const unsigned char *srcImg, const unsigned char *destImg, int x, int y, int width);
 void getBoundingXY(BoundingXY box, int *x1, int *x2, int *y1, int *y2);
 void setBoundingXY(BoundingXY *box, int x1, int x2, int y1, int y2);
-double sobelFilter(const unsigned char *image, int x, int y, int width);
+double sobelFilter(const unsigned char *image, int x, int y, int width, int height);
 
 
 
@@ -370,7 +370,7 @@ BoundingXY searchOutside(const unsigned char *image, BoundingXY boxXY, int width
 	return boxXY;
 }
 
-BoundingXY searchInside(const unsigned char *image, BoundingXY boxXY, int width)
+BoundingXY searchInside(const unsigned char *image, BoundingXY boxXY, int width, int height)
 {
 	double err, merr;
 	int m, n;
@@ -387,7 +387,7 @@ BoundingXY searchInside(const unsigned char *image, BoundingXY boxXY, int width)
 		for ( m = x1; m <= x2; m++ ) {
 			err = calcSSD(_preImg, image, m, n, width);
 			if ( err > merr ) {
-				amp = sobelFilter(image, m, n, width);
+				amp = sobelFilter(image, m, n, width, height);
 				if ( amp >= 80 ) {
 					y1 = n;
 					missCount = -1;
@@ -404,7 +404,7 @@ BoundingXY searchInside(const unsigned char *image, BoundingXY boxXY, int width)
 		for ( m = x1; m <= x2; m++ ) {
 			err = calcSSD(_preImg, image, m, n, width);
 			if ( err > merr ) {
-				amp = sobelFilter(image, m, n, width);
+				amp = sobelFilter(image, m, n, width, height);
 				if ( amp >= 80 ) {
 					y2 = n;
 					missCount = -1;
@@ -421,7 +421,7 @@ BoundingXY searchInside(const unsigned char *image, BoundingXY boxXY, int width)
 		for ( n = y1; n <= y2; n++ ) {
 			err = calcSSD(_preImg, image, m, n, width);
 			if ( err > merr ) {
-				amp = sobelFilter(image, m, n, width);
+				amp = sobelFilter(image, m, n, width, height);
 				if ( amp >= 80 ) {
 					x1 = m;
 					missCount = -1;
@@ -438,7 +438,7 @@ BoundingXY searchInside(const unsigned char *image, BoundingXY boxXY, int width)
 		for ( n = y1; n <= y2; n++ ) {
 			err = calcSSD(_preImg, image, m, n, width);
 			if ( err > merr ) {
-				amp = sobelFilter(image, m, n, width);
+				amp = sobelFilter(image, m, n, width, height);
 				if ( amp >= 80 ) {
 					x2 = m;
 					missCount = -1;
@@ -472,7 +472,7 @@ void setXY2(const unsigned char *image, bounding_box *obox, int width, int heigh
 	boxXY = searchOutside(image,  boxXY, width);
 
 	// 内側に向けて変化している位置を特定しエッジ検出を行う
-	boxXY = searchInside(image, boxXY, width);
+	boxXY = searchInside(image, boxXY, width, height);
 
 	obox->x = boxXY.minX;
 	obox->y = boxXY.minY;
@@ -554,7 +554,7 @@ void setBoundingXY(BoundingXY *box, int x1, int x2, int y1, int y2)
 	box->maxY = y2;
 }
 
-double sobelFilter(const unsigned char *image, int x, int y, int width)
+double sobelFilter(const unsigned char *image, int x, int y, int width, int height)
 {
 	static int sobelX[3][3] = {
 		{-1,0,1},
@@ -569,14 +569,25 @@ double sobelFilter(const unsigned char *image, int x, int y, int width)
 	int val;
 	int m, n;
 	double deltaX, deltaY;
+	int tmpX, tmpY;
 
 	deltaX = deltaY = 0.0;
 	val = 0;
 	for ( n = -1; n < 2; n++ ) {
 		for ( m = -1; m < 2; m++ ) {
-			val = 	PIX(image, m + x, n + y, width, 0) +
-				PIX(image, m + x, n + y, width, 1) +
-				PIX(image, m + x, n + y, width, 2);
+			if ( (m + x) >= width || (n + y) >= height ) {
+				tmpX = MAXTEST(m + x, width - 1);
+				tmpY = MAXTEST(n + y, height - 1);
+				val = 	PIX(image, tmpX, tmpY, width, 0) +
+					PIX(image, tmpX, tmpY, width, 1) +
+					PIX(image, tmpX, tmpY, width, 2);
+			} else {
+				tmpX = MINTEST(m + x, 0);
+				tmpY = MINTEST(n + y, 0);
+				val = 	PIX(image, tmpX, tmpY, width, 0) +
+					PIX(image, tmpX, tmpY, width, 1) +
+					PIX(image, tmpX, tmpY, width, 2);
+			}
 			val /= 3;
 
 			deltaX += val * sobelX[n+1][m+1];
