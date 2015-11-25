@@ -7,6 +7,7 @@
 #define SEARCH_RANGE 50	/* 移動物体の探索範囲 */
 #define MISSRANGE 10		/* 探索ミスカウントの上限 */
 #define MERR 1000
+#define MAMP 50
 
 #define PIX(img, x, y, w, i) ( img[( (x) + (y) * (w) ) * 3 + (i)] )
 #define MINTEST(val, min) ( ((val) < (min)) ? (min) : (val) )
@@ -388,7 +389,7 @@ BoundingXY searchInside(const unsigned char *image, BoundingXY boxXY, int width,
 			err = calcSSD(_preImg, image, m, n, width);
 			if ( err > merr ) {
 				amp = sobelFilter(image, m, n, width, height);
-				if ( amp >= 80 ) {
+				if ( amp >= MAMP ) {
 					y1 = n;
 					missCount = -1;
 					break;
@@ -405,7 +406,7 @@ BoundingXY searchInside(const unsigned char *image, BoundingXY boxXY, int width,
 			err = calcSSD(_preImg, image, m, n, width);
 			if ( err > merr ) {
 				amp = sobelFilter(image, m, n, width, height);
-				if ( amp >= 80 ) {
+				if ( amp >= MAMP ) {
 					y2 = n;
 					missCount = -1;
 					break;
@@ -422,7 +423,7 @@ BoundingXY searchInside(const unsigned char *image, BoundingXY boxXY, int width,
 			err = calcSSD(_preImg, image, m, n, width);
 			if ( err > merr ) {
 				amp = sobelFilter(image, m, n, width, height);
-				if ( amp >= 80 ) {
+				if ( amp >= MAMP ) {
 					x1 = m;
 					missCount = -1;
 					break;
@@ -439,7 +440,8 @@ BoundingXY searchInside(const unsigned char *image, BoundingXY boxXY, int width,
 			err = calcSSD(_preImg, image, m, n, width);
 			if ( err > merr ) {
 				amp = sobelFilter(image, m, n, width, height);
-				if ( amp >= 80 ) {
+				if ( amp >= MAMP ) {
+					fprintf(stderr, "%f\n", amp);
 					x2 = m;
 					missCount = -1;
 					break;
@@ -478,6 +480,44 @@ void setXY2(const unsigned char *image, bounding_box *obox, int width, int heigh
 	obox->y = boxXY.minY;
 	obox->w = boxXY.maxX - boxXY.minX + 1;
 	obox->h = boxXY.maxY - boxXY.minY + 1;
+}
+
+int gausianFilter(const unsigned char *image, int x, int y, int width, int height)
+{
+	static double gausianFilter[5][5] = {
+		{(double)1/256, (double)4/256, (double)6/256, (double)4/256, (double)1/256},
+		{(double)4/256, (double)16/256, (double)24/256, (double)16/256, (double)4/256},
+		{(double)6/256, (double)24/256, (double)36/256, (double)24/256, (double)6/256},
+		{(double)4/256, (double)16/256, (double)24/256, (double)16/256, (double)4/256},
+		{(double)1/256, (double)4/256, (double)6/256, (double)4/256, (double)1/256},
+	};
+	int m, n;
+	int val;
+	double resultValue;
+	int tmpX, tmpY;
+
+	resultValue = 0.0;
+	for ( n = -2; n <= 2; n++ ) {
+		for ( m = -2; m <= 2; m++ ) {
+			if ( (m + x) >= width || (n + y) >= height ) {
+				tmpX = MAXTEST(m + x, width - 1);
+				tmpY = MAXTEST(n + y, height - 1);
+				val = 	PIX(image, tmpX, tmpY, width, 0) +
+					PIX(image, tmpX, tmpY, width, 1) +
+					PIX(image, tmpX, tmpY, width, 2);
+			} else {
+				tmpX = MINTEST(m + x, 0);
+				tmpY = MINTEST(n + y, 0);
+				val = 	PIX(image, tmpX, tmpY, width, 0) +
+					PIX(image, tmpX, tmpY, width, 1) +
+					PIX(image, tmpX, tmpY, width, 2);
+			}
+			val /= 3;
+
+			resultValue += (double)val * gausianFilter[n+2][m+2];
+		}
+	}
+	return (int)resultValue;
 }
 
 /* レベル2用 */
@@ -578,17 +618,11 @@ double sobelFilter(const unsigned char *image, int x, int y, int width, int heig
 			if ( (m + x) >= width || (n + y) >= height ) {
 				tmpX = MAXTEST(m + x, width - 1);
 				tmpY = MAXTEST(n + y, height - 1);
-				val = 	PIX(image, tmpX, tmpY, width, 0) +
-					PIX(image, tmpX, tmpY, width, 1) +
-					PIX(image, tmpX, tmpY, width, 2);
 			} else {
 				tmpX = MINTEST(m + x, 0);
 				tmpY = MINTEST(n + y, 0);
-				val = 	PIX(image, tmpX, tmpY, width, 0) +
-					PIX(image, tmpX, tmpY, width, 1) +
-					PIX(image, tmpX, tmpY, width, 2);
 			}
-			val /= 3;
+			val = gausianFilter(image, tmpX, tmpY, width, height);
 
 			deltaX += val * sobelX[n+1][m+1];
 			deltaY += val * sobelY[n+1][m+1];
