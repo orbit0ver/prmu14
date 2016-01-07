@@ -23,6 +23,7 @@ typedef struct {
 bounding_box obox;		/* 前フレームにおける移動物体を囲む矩形 */
 unsigned char *_preImg = NULL;	/* 前フレームの探索範囲の画像 */
 bounding_box _searchBox;
+int _prePos[4][2];
 
 
 double calcSSD(const unsigned char *srcImg, const unsigned char *destImg, int x, int y, int width);
@@ -390,6 +391,14 @@ BoundingXY searchInside(const unsigned char *image, BoundingXY boxXY, int width,
 			if ( err > merr ) {
 				amp = sobelFilter(image, m, n, width, height);
 				if ( amp >= MAMP ) {
+					if ( _prePos[0][1] != -1 && _prePos[0][1] < n ) {
+						amp = sobelFilter(image, _prePos[0][0], _prePos[0][1], width, height);
+						if ( amp >= MAMP ) {
+							n = _prePos[0][1];
+						}
+					}
+					_prePos[0][0] = m;
+					_prePos[0][1] = n;
 					y1 = n;
 					missCount = -1;
 					break;
@@ -407,6 +416,14 @@ BoundingXY searchInside(const unsigned char *image, BoundingXY boxXY, int width,
 			if ( err > merr ) {
 				amp = sobelFilter(image, m, n, width, height);
 				if ( amp >= MAMP ) {
+					if ( _prePos[1][1] != -1 && _prePos[1][1] > n ) {
+						amp = sobelFilter(image, _prePos[1][0], _prePos[1][1], width, height);
+						if ( amp >= MAMP ) {
+							n = _prePos[1][1];
+						}
+					}
+					_prePos[1][0] = m;
+					_prePos[1][1] = n;
 					y2 = n;
 					missCount = -1;
 					break;
@@ -424,6 +441,14 @@ BoundingXY searchInside(const unsigned char *image, BoundingXY boxXY, int width,
 			if ( err > merr ) {
 				amp = sobelFilter(image, m, n, width, height);
 				if ( amp >= MAMP ) {
+					if ( _prePos[2][1] != -1 && _prePos[2][0] < m ) {
+						amp = sobelFilter(image, _prePos[2][0], _prePos[2][1], width, height);
+						if ( amp >= MAMP ) {
+							m = _prePos[2][0];
+						}
+					}
+					_prePos[2][0] = m;
+					_prePos[2][1] = n;
 					x1 = m;
 					missCount = -1;
 					break;
@@ -441,6 +466,14 @@ BoundingXY searchInside(const unsigned char *image, BoundingXY boxXY, int width,
 			if ( err > merr ) {
 				amp = sobelFilter(image, m, n, width, height);
 				if ( amp >= MAMP ) {
+					if ( _prePos[3][1] != -1 && _prePos[3][0] > m ) {
+						amp = sobelFilter(image, _prePos[3][0], _prePos[3][1], width, height);
+						if ( amp >= MAMP ) {
+							m = _prePos[3][0];
+						}
+					}
+					_prePos[3][0] = m;
+					_prePos[3][1] = n;
 					x2 = m;
 					missCount = -1;
 					break;
@@ -490,6 +523,12 @@ void my_tracking_level2( int frameID, unsigned char *image, int width, int heigh
 		obox.y = 0;
 		obox.w = width;
 		obox.h = height;
+
+		for ( int y = 0; y < 4; y++ ) {
+			for ( int x = 0; x < 2; x++ ) {
+				_prePos[y][x] = -1;
+			}
+		}
 
 		/* 移動物体を囲む矩形を設定 */
 		set_result( frameID, obox );
